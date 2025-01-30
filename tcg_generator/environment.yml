@@ -1,32 +1,58 @@
 name: tcg_generator
 channels:
   - conda-forge
+  - pytorch
+  - nivida
 dependencies:
 
-  # Classic pydata_packages
+# Classic pydata_packages
+
   - python=3.10
+  - ipython
+  - jupyterlab
+  - pip
+
+  # Formating and make things look nice
   - black
   - flake8
   - isort
-  - pip
   - typer
   - loguru
   - tqdm
-  - ipython
-  - jupyterlab
+
+# Data Science packages
   - matplotlib
   - notebook
   - numpy
   - pandas
   - scikit-learn
+  - seaborn
 
-  # Specific packages for tcg_generator
+# Specific packages for tcg_generator
+
+  # NLP work
+  - nltk
+  - spacy
+  - gensim
+
+  # # Pytorch and related packages - Pip install your own pytorch version
+  # - pytorch==2.5.1 # pytorch 2.6.0 is pip install only
+  # - pytorch-cuda=11.8 # Specific to your GPU setup
+  # - torchtext
+
+  # - tensorboard
+  # - tensorboardx
+  - torchinfo
+  - torchtext
 
 
+  # Huggingface items
+  - diffusers
+  - transformers
 
   # Sphinx stuff we probably won't use for a project this short...
 
   - pip:
-    - python-dotenv
-    - mkdocs
-    - -e . # developer install of this package
+    # - python-dotenv
+    # - mkdocs
+    # - -e . # developer install of this package
