@@ -18,7 +18,7 @@ THEME_REGEX_MAP = {
     "Aura": [r"(?<!non-)aura"],
     "Cascade": [r"cascade"],
     "Combat Damage": [r"combat damage"],
-    "Counter Theme": [r"\b(?:[a-z]+)\bcounter"], # not yet working.
+    "Counter Theme": [r"\b([a-z]+) counter"], # not yet working.
     "Craft": [r"\bcraft"],
     "Curse": [r"curse\b"],
     "Cycling": [r"cycl(?:e|es|ing)"],
@@ -39,12 +39,22 @@ THEME_REGEX_MAP = {
     "Evoke": [r"\bevoke\b"],
     "Exalted": [r"\bexalted\b", r"attacks alone"],
     "Exchange": [r"\bexchange\b"],
+    "Explore": [r"\bexplores\b"],
+    "Fights": [r"fight(?:s)?(?: up to one| another)? target creature", r"fight each other"],
     "First Strike": [r"first strike"],
-    "Flash": [r"flash"],
-    "Food": [r"food"],
+    "Flash": [r"flash\b"],
+    "Flashback": [r"flashback"],
+    "Flip a Coin": [r"flip [a-zA-Z0-9]+ coin(?:s)?"],
     "Flying": [r"flying"],
+    "Fog": [r"prevent all (?:combat )?damage"],
+    "Food": [r"food"],
+    "Foretell": [r"foretell"],
+    "Free Spells": [r"without paying (?:its|their) mana cost(?:s)?"],
     "Gain Control": [r"gain(?:s)? control"],
+    "Goad": [r"goad"],
     "Haste": [r"haste"],
+    "Hexproof": [r"hexproof"],
+    "Improvise": [r"improvise"],
     "Lifelink": [r"lifelink"],
     "Menace": [r"menace"],
     "Reach": [r"reach"],
@@ -73,6 +83,8 @@ def parse_dataset(entry: Any):
             match = re.search(regex, oracle_text)
             if match is not None:
                 PARSED_CARD_THEMES.setdefault(card_name, set())
+                if (theme == "Counter Theme"):
+                    theme = match.group(1).capitalize() + " Counters"
                 PARSED_CARD_THEMES[card_name].add(theme)
 
 def main(
@@ -85,6 +97,8 @@ def main(
 
     track_progress(dataset_json, parse_dataset)
     card_themes = {card_name: list(themes) for card_name, themes in PARSED_CARD_THEMES.items()}
+    print()
+    print(f"Total cards with themes: {len(card_themes)}")
     with open(output_path, "w") as output_file:
         output_file.write(json.dumps(card_themes))
 
