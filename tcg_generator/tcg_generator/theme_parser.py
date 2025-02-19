@@ -284,6 +284,7 @@ def parse_dataset(entry: Any):
     card_name = entry.get("name", "")
     oracle_text = entry.get("oracle_text", "").lower()
 
+    PARSED_CARD_THEMES.setdefault(card_name, set())
     reminder_text = r"\(.*\)"
     oracle_text = re.sub(reminder_text, "", oracle_text)
 
@@ -291,10 +292,34 @@ def parse_dataset(entry: Any):
         for regex in regexes:
             match = re.search(regex, oracle_text)
             if match is not None:
-                PARSED_CARD_THEMES.setdefault(card_name, set())
                 if (theme == "Counter Theme"):
                     theme = match.group(1).capitalize() + " Counters"
                 PARSED_CARD_THEMES[card_name].add(theme)
+
+    card_colors = entry.get("colors", list())
+    color = "".join(card_colors)
+    if color == "":
+        # It is a colorless card, let's add some special representation.
+        color = "N"
+    PARSED_CARD_THEMES[card_name].add(f"{color} Color")
+
+    card_identity_colors = entry.get("color_identity", list())
+    card_identity = "".join(card_identity_colors)
+    if card_identity == "":
+        # It is a colorless identity, let's add some special representation.
+        card_identity = "N"
+    PARSED_CARD_THEMES[card_name].add(f"{card_identity} Identity")
+
+    type_line = entry.get("type_line", "")
+    types = type_line.split(" ")
+    for type in types:
+        if type == "—":
+            continue
+        PARSED_CARD_THEMES[card_name].add(type)
+
+    mana_cost = entry.get("mana_cost", "")
+    PARSED_CARD_THEMES[card_name].add(f"{mana_cost} Cost")
+
 
 def main(
     input_path: Path = RAW_DATA_DIR / "oracle-cards-20250127220801.json",
