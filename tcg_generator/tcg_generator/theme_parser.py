@@ -9,11 +9,13 @@ from tcg_generator.progress_tracker import track_progress
 from tcg_generator.config import PROCESSED_DATA_DIR, RAW_DATA_DIR
 
 THEME_REGEX_MAP = {
-    "Activated Abilities": [r"activated abilities"],
-    "Adamant": [r"adamant"],
+    "Activated Abilities": [r"(?<!counter target )activated abilities.*(?!can't be activated)"],
+    "Adamant": [r"adamant —"],
     "Adapt": [r"adapt"],
+    "Addendum": [r"addendum —"],
     "Additional Combat": [r"additional combat"],
     "Affinity": [r"affinity"],
+    "Afflict": [r"afflict (x|[0-9]+)"],
     "Afterlife": [r"afterlife"],
     "Alliance": [r"alliance —"],
     "Alternative Cost": [r"may (?:.*) rather than pay"],
@@ -21,7 +23,10 @@ THEME_REGEX_MAP = {
     "Amplify": [r"amplify [0-9]+"],
     "Annihilator": [r"annihilator"],
     "Any Number Of": [r"a deck can have any number of"],
+    "Artifact Based": [r"(?<!non)(?<!this )artifact"],
     "Ascend": [r"ascend\b", r"you have the city's blessing"],
+    "Assist": [r"^\bassist\b", r"\n\bassist\b"],
+    "Attacking": [r"(?:whenever you )?attack(?:s|ing)"],
     "Aura": [r"(?<!non-)aura", r"enchant\b", r"bestow\b"],
     "Awaken": [r"awaken (?:[0-9]+)"],
     "Backup": [r"backup (?:[0-9]+)"],
@@ -29,13 +34,16 @@ THEME_REGEX_MAP = {
     "Bargain": [r"bargain\s+\n"],
     "Battalion": [r"battalion —", r"and at least two other creatures attack"],
     "Battle Cry": [r"battle cry (?!goblin)"],
+    "Becomes Tapped": [r"whenever .* becomes tapped"],
     "Bestow": [r"bestow\b"],
     "Blitz": [r"blitz {", r"has blitz"],
     "Bloodthirst": [r"bloodthirst [0-9x]+"],
+    "Boardwipe": [r"destroy all"],
     "Boast": [r"boast\b"],
     "Bolster": [r"bolster [0-9x]+"],
     "Bushido": [r"bushido [0-9x]+"],
     "Buyback": [r"buyback(?:—| {)"],
+    "Card Draw": [r"draw(?:s)? .*card(?:s)?"],
     "Cascade": [r"cascade"],
     "Casualty": [r"casualty"],
     "Celebration": [r"celebration —"],
@@ -60,9 +68,12 @@ THEME_REGEX_MAP = {
     "Constellation": [r"constellation —"],
     "Convoke": [r"convoke"],
     "Corrupted": [r"corrupted —"],
+    "Council's Dilemma": [r"council's dilemma —"],
+    "Counterspell": [r"counter target.* spell", r"counter target.* ability", r"counter all", r"counter it"],
     "Counter Theme": [r"\b([a-z]+) counter(?:s)?\b"], # not yet working.
     "Coven": [r"coven —"],
     "Craft": [r"craft with"], # Doesn't work. Multi-faced cards have different oracle text location.
+    "Creature Based": [r"(?<!non)(?<!this )creature"],
     "Crew": [r"crew [0-9]+", r"crew(?:s)? vehicle"],
     "Cumulative Upkeep": [r"cumulative upkeep"],
     "Curse": [r"curse\b"],
@@ -83,6 +94,8 @@ THEME_REGEX_MAP = {
     "Devoid": [r"devoid"],
     "Devotion": [r"devotion"],
     "Devour": [r"devour\s(?:.*\s)?[0-9]+"],
+    "Dies": [r"\bdies\b"],
+    "Discard": [r"\bdiscard\b"],
     "Discover": [r"\bdiscover\b"],
     "Disguise": [r"disguise {"],
     "Disturb": [r"disturb {"],
@@ -96,6 +109,7 @@ THEME_REGEX_MAP = {
     "Embalm": [r"embalm {", r"gains embalm", r"embalm ability"],
     "Emerge": [r"emerge\b.*{", r"with emerge\b"],
     "Eminence": [r"eminence —"],
+    "Enchantment Based": [r"(?<!non)(?<!this )enchantment"],
     "Encore": [r"encore {", r"(gains|has) encore"],
     "Energy": [r"{e}"],
     "Enlist": [r"\benlist\b"],
@@ -120,6 +134,7 @@ THEME_REGEX_MAP = {
     "Fear": [r"\bfear\b", r"gains fear"],
     "Ferocious": [r"ferocious —"],
     "Flanking": [r"\bflanking\b"],
+    "Flicker": [r"exile.*return it to the battlefield"],
     "Fights": [r"fight(?:s)?(?: up to one| another)? target creature", r"fight each other"],
     "First Strike": [r"first strike"],
     "Flash": [r"flash\b"],
@@ -165,6 +180,7 @@ THEME_REGEX_MAP = {
     "Landwalk": [r"landwalk", r"islandwalk", r"swampwalk", r"forestwalk", r"plainswalk", r"mountainwalk"],
     "Level Up": [r"level up {", r"with level up"],
     "Lieutenant": [r"lieutenant —"],
+    "Lifegain": [r"\bgain.*\blife\b"],
     "Lifelink": [r"lifelink"],
     "Living Weapon": [r"living weapon"],
     "Madness": [r"madness {", r"has madness", r"madness—pay six {c}"],
@@ -198,6 +214,7 @@ THEME_REGEX_MAP = {
     "Parley": [r"parley —"],
     "Partner": [r"\bpartner\b"],
     "Party": [r"in your party", r"a full party", r"choose(?:s)? a party"],
+    "Pay Life": [r"pay (?:x |[0-9]+ )?life"],
     "Persist": [r"\bpersist\b"],
     "Phasing": [r"\bphasing\b"],
     "Reach": [r"reach"],
@@ -216,6 +233,7 @@ THEME_REGEX_MAP = {
     "Rampage": [r"rampage [0-9]+"],
     "Ravenous": [r"\bravenous\b\s*\n"],
     "Read Ahead": [r"read ahead"],
+    "Reanimation": [r"(?:put|return).* from.* graveyard (?:on)?to the battlefield"],
     "Rebound": [r"\brebound\b"],
     "Reconfigure": [r"reconfigure {", r"reconfigure—"],
     "Recover": [r"recover {", r"recover—"],
@@ -227,8 +245,10 @@ THEME_REGEX_MAP = {
     "Riot": [r"\briot\b"],
     "Ripple": [r"ripple [0-9]+"],
     "Roll Dice": [r"roll .* d20", r"roll .* d12", r"roll .* d10", r"roll .* dice"],
+    "Sacrifice": [r"(?<!can't be )sacrifice(?:s|d)?"],
     "Scavenge": [r"scavenge {", r"has scavenge"],
     "Scry": [r"scry"],
+    "Secret Council": [r"secret council —"],
     "Shadow": [r"\bshadow\b"],
     "Shroud": [r"\bshroud\b"],
     "Skulk": [r"\bskulk\b"],
@@ -253,6 +273,7 @@ THEME_REGEX_MAP = {
     "The Ring Tempts": [r"the ring tempts you"],
     "Threshold": [r"threshold —"],
     "Time Travel": [r"time travel"],
+    "Token Theme": [r"(?:x|[0-9]+)/(?:x|[0-9]+)\s(?:white|blue|black|red|green|colorless)?(?: and white|blue|black|red|green|colorless)?(?:\s)?([\w\s]+){1,2}\s(?:creature|artifact|enchantment|land)(?:\screature)?\stoken"],
     "Toxic": [r"toxic (x|[0-9]+)"],
     "Training": [r"^\btraining\b", r"\n\btraining\b", r"have training"],
     "Trample": [r"trample"],
@@ -290,10 +311,16 @@ def parse_dataset(entry: Any):
 
     for [theme, regexes] in THEME_REGEX_MAP.items():
         for regex in regexes:
-            match = re.search(regex, oracle_text)
-            if match is not None:
-                if (theme == "Counter Theme"):
-                    theme = match.group(1).capitalize() + " Counters"
+            match = re.findall(regex, oracle_text)
+            if len(match) > 0:
+                if theme == "Counter Theme":
+                    theme = match[0].capitalize() + " Counters"
+                elif theme == "Token Theme":
+                    for token_match in match:
+                        theme = token_match.capitalize() + " Tokens"
+                        PARSED_CARD_THEMES[card_name].add(theme)
+                    # Continue so we don't add the last theme more than once.
+                    continue
                 PARSED_CARD_THEMES[card_name].add(theme)
 
     card_colors = entry.get("colors", list())
@@ -314,6 +341,8 @@ def parse_dataset(entry: Any):
     types = type_line.split(" ")
     for type in types:
         if type == "—":
+            continue
+        elif type == "\\\\":
             continue
         PARSED_CARD_THEMES[card_name].add(type)
 
