@@ -273,7 +273,6 @@ THEME_REGEX_MAP = {
     "The Ring Tempts": [r"the ring tempts you"],
     "Threshold": [r"threshold —"],
     "Time Travel": [r"time travel"],
-    "Token Theme": [r"(?:x|[0-9]+)/(?:x|[0-9]+)\s(?:white|blue|black|red|green|colorless)?(?: and white|blue|black|red|green|colorless)?(?:\s)?([\w\s]+){1,2}\s(?:creature|artifact|enchantment|land)(?:\screature)?\stoken"],
     "Toxic": [r"toxic (x|[0-9]+)"],
     "Training": [r"^\btraining\b", r"\n\btraining\b", r"have training"],
     "Trample": [r"trample"],
@@ -315,13 +314,14 @@ def parse_dataset(entry: Any):
             if len(match) > 0:
                 if theme == "Counter Theme":
                     theme = match[0].capitalize() + " Counters"
-                elif theme == "Token Theme":
-                    for token_match in match:
-                        theme = token_match.capitalize() + " Tokens"
-                        PARSED_CARD_THEMES[card_name].add(theme)
-                    # Continue so we don't add the last theme more than once.
-                    continue
                 PARSED_CARD_THEMES[card_name].add(theme)
+
+    all_parts = entry.get("all_parts", list())
+    if len(all_parts) > 0:
+        for part in all_parts:
+            if part["object"] == "related_card" and part["component"] == "token":
+                token_name = part["name"]
+                PARSED_CARD_THEMES[card_name].add(f"{token_name} Tokens")
 
     card_colors = entry.get("colors", list())
     color = "".join(card_colors)
