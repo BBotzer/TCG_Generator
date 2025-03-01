@@ -7,7 +7,7 @@ dependencies:
 
 # Classic pydata_packages
 
-  - python=3.10
+  - python
   - ipython
   - jupyterlab
   - pip
@@ -36,25 +36,30 @@ dependencies:
   - spacy
   - gensim
 
-  # # Pytorch and related packages - Pip install your own pytorch version
-  # - pytorch==2.5.1 # pytorch 2.6.0 is pip install only
-  # - pytorch-cuda=11.8 # Specific to your GPU setup
-  # - torchtext
+
 
   # - tensorboard
   # - tensorboardx
-  - torchinfo
-  - torchtext
+  # - torchinfo
+  # - torchtext
 
-
-  # Huggingface items
-  - diffusers
-  - transformers
 
   # Sphinx stuff we probably won't use for a project this short...
 
   - pip:
-    - loguru
+
+    # Huggingface items
+    # - diffusers
+    # - transformers
+    # - tokenizers
+  # - accelerate # If you've got a good GPU this'll work... I don't think a 1070 will support it
+
+
+    # Pytorch and related packages - Pip install your own pytorch version
+    # - pytorch==2.5.1 # pytorch 2.6.0 is pip install only
+    # - pytorch-cuda=11.8 # Specific to your GPU setup
+    # - torchtext
+
     # - python-dotenv
     # - mkdocs
-    # - -e . # developer install of this package
+    - -e . # developer install of this package
