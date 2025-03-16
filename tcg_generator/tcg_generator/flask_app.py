@@ -1,12 +1,24 @@
 # call with python flask_app.py
 
 from flask import Flask, render_template, request, jsonify
+from tokenizers import Tokenizer
+import torch
 import os
 
 app = Flask(__name__)
 
+MODEL_DIRECTORY = ""
+TOKENIZER_FILE = ""
+
 # Card types - This might make generation slightly better
-CARD_TYPES = ["Creature", "Instant", "Sorcery", "Artifact", "Enchantment", "Planeswalker", "Land"]
+CARD_TYPES = [
+    "Creature",
+    "Instant",
+    "Sorcery",
+    "Artifact",
+    "Enchantment",
+    "Planeswalker", 
+    "Land"]
 
 # Themes - We'll need to update these with the actual themes we want to use
 # For now, we'll use some generic themes
@@ -18,250 +30,54 @@ THEMES = [
     "Cyberpunk"
 ]
 
-def create_templates():
-    """Create the templates directory and HTML file"""
-    if not os.path.exists("templates"):
-        os.makedirs("templates")
+def generate_text(
+        prompt, max_length=300, num_return_sequences=1, temperature=1.0):
+    """
+    Generate text using the trained GPT2 model.
 
-    with open("templates/index.html", "w", encoding="utf-8") as f:
-        f.write("""<!DOCTYPE html>
-<html>
-<head>
-    <title>Multiple Theme MTG Card Generator</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            display: flex;
-            gap: 20px;
-        }
-        .form-section {
-            flex: 1;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .output-section {
-            flex: 1;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            min-height: 300px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        select, button {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-            margin-top: 20px;
-            font-weight: bold;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .theme-selectors {
-            margin-top: 15px;
-            border-top: 1px solid #eee;
-            padding-top: 15px;
-        }
-        .card {
-            border: 1px solid #aaa;
-            border-radius: 10px;
-            padding: 15px;
-            background-color: #f9f6e9;
-            margin-top: 20px;
-        }
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-        .card-name {
-            font-weight: bold;
-            font-size: 1.2em;
-        }
-        .card-type {
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 5px;
-            margin-bottom: 10px;
-        }
-        .card-text {
-            margin-bottom: 15px;
-            min-height: 100px;
-        }
-        .card-flavor {
-            font-style: italic;
-            border-top: 1px solid #ccc;
-            padding-top: 5px;
-            color: #666;
-        }
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
-        }
-    </style>
-</head>
-<body>
-    <h1>MTG Card Generator</h1>
+    Args:
+        model: The trained GPT2 model
+        tokenizer: The tokenizer used for encoding/decoding text
+        prompt: The input prompt text to generate from
+        max_length: Maximum length of generated sequence
+        num_return_sequences: Number of sequences to generate
+        temperature: Controls randomness (higher = more random)
 
-    <div class="container">
-        <div class="form-section">
-            <h2>Card Parameters</h2>
-            <form id="cardForm">
-                <div class="form-group">
-                    <label for="num_themes">Number of Themes (1-5):</label>
-                    <select id="num_themes" name="num_themes">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                    </select>
-                </div>
+    Returns:
+        List of generated text sequences
+    """
+    # Move model to GPU if available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-                <div id="themeSelectors" class="theme-selectors">
-                    <!-- Theme selectors will be added here dynamically -->
-                </div>
+    model = torch.load(MODEL_DIRECTORY)
+    model = model.to(device)
+    model.eval()
 
-                <div class="form-group">
-                    <label for="card_type">Card Type:</label>
-                    <select id="card_type" name="card_type">
-                        {% for card_type in card_types %}
-                        <option value="{{ card_type }}">{{ card_type }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+    # Need to load tokenizer from saved folder.
+    tokenizer = Tokenizer.from_file(TOKENIZER_FILE)
+    # Encode the input prompt
+    encoded_prompt = tokenizer(prompt, return_tensors='pt').to(device)
 
-                <button type="submit">Generate Card</button>
-            </form>
-        </div>
+    # Generate text
+    with torch.no_grad():
+        output_sequences = model.generate(
+            input_ids=encoded_prompt['input_ids'],
+            attention_mask=encoded_prompt['attention_mask'],
+            max_length=max_length,
+            temperature=temperature,
+            num_return_sequences=num_return_sequences,
+            pad_token_id=tokenizer.pad_token_id,
+            eos_token_id=tokenizer.eos_token_id,
+            do_sample=True,
+        )
 
-        <div class="output-section">
-            <h2>Generated Card</h2>
-            <div id="loading" class="loading">Generating card...</div>
-            <div id="cardOutput"></div>
-        </div>
-    </div>
+    # Decode and return the generated sequences
+    generated_sequences = []
+    for generated_sequence in output_sequences:
+        generated_text = tokenizer.decode(generated_sequence, skip_special_tokens=True)
+        generated_sequences.append(generated_text)
 
-    <script>
-        // Available themes from the server
-        const themes = {{ themes|tojson }};
-
-        // Generate theme selectors based on selection
-        function generateThemeSelectors() {
-            const numThemes = parseInt(document.getElementById('num_themes').value);
-            const container = document.getElementById('themeSelectors');
-
-            // Clear existing selectors
-            container.innerHTML = '';
-
-            // Add the selected number of theme selectors
-            for (let i = 0; i < numThemes; i++) {
-                const formGroup = document.createElement('div');
-                formGroup.className = 'form-group';
-
-                const label = document.createElement('label');
-                label.textContent = `Theme ${i+1}:`;
-                label.setAttribute('for', `theme_${i}`);
-
-                const select = document.createElement('select');
-                select.name = `theme_${i}`;
-                select.id = `theme_${i}`;
-
-                themes.forEach(theme => {
-                    const option = document.createElement('option');
-                    option.value = theme;
-                    option.textContent = theme;
-                    select.appendChild(option);
-                });
-
-                formGroup.appendChild(label);
-                formGroup.appendChild(select);
-                container.appendChild(formGroup);
-            }
-        }
-
-        // Initial theme selectors generation
-        document.addEventListener('DOMContentLoaded', generateThemeSelectors);
-
-        // Update theme selectors when the number changes
-        document.getElementById('num_themes').addEventListener('change', generateThemeSelectors);
-
-        // Form submission handler
-        document.getElementById('cardForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            // Show loading indicator
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('cardOutput').innerHTML = '';
-
-            // Get form data
-            const formData = new FormData(this);
-
-            // Send to server
-            fetch('/generate', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Hide loading indicator
-                document.getElementById('loading').style.display = 'none';
-
-                if (data.success) {
-                    const card = data.card;
-
-                    // Display the card
-                    document.getElementById('cardOutput').innerHTML = `
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="card-name">${card.name}</div>
-                            </div>
-                            <div class="card-type">${card.type}</div>
-                            <div class="card-text">${card.text}</div>
-                            <div class="card-flavor">${card.flavor_text}</div>
-                        </div>
-                    `;
-                } else {
-                    document.getElementById('cardOutput').innerHTML = `
-                        <div class="error">Error: ${data.error}</div>
-                    `;
-                }
-            })
-            .catch(error => {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('cardOutput').innerHTML = `
-                    <div class="error">Error: ${error.message}</div>
-                `;
-            });
-        });
-    </script>
-</body>
-</html>""")
+    return generated_sequences
 
 @app.route('/')
 def index():
@@ -276,38 +92,38 @@ def generate():
     # It will need to be processed for the model input
     form_data = request.form.to_dict()
 
-
-    # Process the form_data for the model input
-
-
-    # Run our model here
-    model_output = ""
-
-    # Do all the parsing within here.
-    # This is smaple parsing for right now...
     try:
-        # Get the number of themes
-        num_themes = int(form_data.get("num_themes", 1))
-
-        # Collect all selected themes
-        selected_themes = []
-        for i in range(num_themes):
+        # Process the form_data for the model input
+        selected_themes = list()
+        for i in range(int(form_data["num_themes"])):
             theme_key = f"theme_{i}"
-            if theme_key in form_data:
-                selected_themes.append(form_data[theme_key])
+            if not theme_key in form_data:
+                continue
 
-        # Get the selected card type
-        selected_card_type = form_data.get("card_type", CARD_TYPES[0])
+            selected_themes.append(form_data[theme_key])
 
-        # Combine the themes
-        theme_text = " + ".join(selected_themes)
+        selected_card_type = form_data["card_type"]
+        selected_themes.append(selected_card_type)
+        themes_text = f"<THEMES> {" , ".join(selected_themes)}"
+        print(themes_text)
 
+        # Run our model here
+        if (
+            (MODEL_DIRECTORY != "" and os.path.exists(MODEL_DIRECTORY))
+            or (TOKENIZER_FILE != "" and os.path.exists(TOKENIZER_FILE))
+        ):
+            # Need to load the tokenizer from a saved folder as well.
+            model_output = generate_text(themes_text)
+        else:
+            model_output = f"This is a {selected_card_type.lower()} card combining the themes: {themes_text}."
+
+        # Do all the parsing within here.
         # Mock card generation
         # This is where we'll have to parse out our generated card text and slap it in
         card = {
-            "name": f"{theme_text} {selected_card_type}",
+            "name": themes_text,
             "type": selected_card_type,
-            "text": f"This is a {selected_card_type.lower()} card combining the themes: {theme_text}.",
+            "text": model_output,
             "flavor_text": f"The blended essence of {', '.join(selected_themes)} flows through this {selected_card_type.lower()}."
         }
 
@@ -316,8 +132,5 @@ def generate():
         return jsonify({"success": False, "error": str(e)})
 
 if __name__ == '__main__':
-    # Create templates before running
-    create_templates()
-
     # Run the Flask app
     app.run(debug=True, port=5000)
