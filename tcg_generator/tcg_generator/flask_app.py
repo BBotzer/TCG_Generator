@@ -1,34 +1,15 @@
 # call with python flask_app.py
 
+import os
 from flask import Flask, render_template, request, jsonify
 from tokenizers import Tokenizer
 import torch
-import os
+from tcg_generator.theme_options import THEME_OPTIONS, TYPE_LINE_OPTIONS
 
 app = Flask(__name__)
 
 MODEL_DIRECTORY = ""
 TOKENIZER_FILE = ""
-
-# Card types - This might make generation slightly better
-CARD_TYPES = [
-    "Creature",
-    "Instant",
-    "Sorcery",
-    "Artifact",
-    "Enchantment",
-    "Planeswalker", 
-    "Land"]
-
-# Themes - We'll need to update these with the actual themes we want to use
-# For now, we'll use some generic themes
-THEMES = [
-    "Classic Fantasy",
-    "Sci-Fi Future",
-    "Gothic Horror",
-    "Steampunk",
-    "Cyberpunk"
-]
 
 def generate_text(
         prompt, max_length=300, num_return_sequences=1, temperature=1.0):
@@ -82,7 +63,7 @@ def generate_text(
 @app.route('/')
 def index():
     """Render the main page with the form"""
-    return render_template('index.html', themes=THEMES, card_types=CARD_TYPES)
+    return render_template('index.html', themes=THEME_OPTIONS, card_types=TYPE_LINE_OPTIONS)
 
 @app.route('/generate', methods=['POST'])
 def generate():

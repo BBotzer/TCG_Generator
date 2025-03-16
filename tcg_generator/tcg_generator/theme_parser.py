@@ -303,6 +303,8 @@ THEME_REGEX_MAP = {
 }
 
 PARSED_CARD_THEMES: dict[str, set[str]] = dict()
+TYPE_LINE_OPTIONS: set[str] = set()
+THEME_OPTIONS: set[str] = set()
 
 def parse_dataset(entry: Any):
     card_name = entry.get("name", "")
@@ -319,27 +321,34 @@ def parse_dataset(entry: Any):
                 if theme == "Counter Theme":
                     theme = match[0].capitalize() + " Counters"
                 PARSED_CARD_THEMES[card_name].add(theme)
+                THEME_OPTIONS.add(theme)
 
     all_parts = entry.get("all_parts", list())
     if len(all_parts) > 0:
         for part in all_parts:
             if part["object"] == "related_card" and part["component"] == "token":
                 token_name = part["name"]
-                PARSED_CARD_THEMES[card_name].add(f"{token_name} Tokens")
+                theme = f"{token_name} Tokens"
+                PARSED_CARD_THEMES[card_name].add(theme)
+                THEME_OPTIONS.add(theme)
 
     card_colors = entry.get("colors", list())
     color = "".join(card_colors)
     if color == "":
         # It is a colorless card, let's add some special representation.
         color = "N"
-    PARSED_CARD_THEMES[card_name].add(f"{color} Color")
+    color_theme = f"{color} Color"
+    PARSED_CARD_THEMES[card_name].add(color_theme)
+    THEME_OPTIONS.add(color_theme)
 
     card_identity_colors = entry.get("color_identity", list())
     card_identity = "".join(card_identity_colors)
     if card_identity == "":
         # It is a colorless identity, let's add some special representation.
         card_identity = "N"
-    PARSED_CARD_THEMES[card_name].add(f"{card_identity} Identity")
+    identity_theme = f"{card_identity} Identity"
+    PARSED_CARD_THEMES[card_name].add(identity_theme)
+    THEME_OPTIONS.add(identity_theme)
 
     type_line = entry.get("type_line", "")
     types = type_line.split(" ")
@@ -349,9 +358,12 @@ def parse_dataset(entry: Any):
         elif type == "\\\\":
             continue
         PARSED_CARD_THEMES[card_name].add(type)
+        TYPE_LINE_OPTIONS.add(type)
 
     mana_cost = entry.get("mana_cost", "")
-    PARSED_CARD_THEMES[card_name].add(f"{mana_cost} Cost")
+    mana_cost_theme = f"{mana_cost} Cost"
+    PARSED_CARD_THEMES[card_name].add(mana_cost_theme)
+    THEME_OPTIONS.add(mana_cost_theme)
 
 
 def main(
@@ -369,6 +381,12 @@ def main(
     print(f"Total cards with themes: {len(card_themes)}")
     with open(output_path, "w") as output_file:
         output_file.write(json.dumps(card_themes))
+
+    with open(PROCESSED_DATA_DIR / "theme_options.json", "w") as theme_options_file:
+        theme_options_file.write(json.dumps(sorted(list(THEME_OPTIONS)), indent=4))
+
+    with open(PROCESSED_DATA_DIR / "type_options.json", "w") as type_options_file:
+        type_options_file.write(json.dumps(sorted(list(TYPE_LINE_OPTIONS)), indent=4))
 
 if __name__ == "__main__":
     main()
