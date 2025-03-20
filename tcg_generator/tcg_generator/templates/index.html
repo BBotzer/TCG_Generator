@@ -209,15 +209,21 @@
                 if (data.success) {
                     const card = data.card;
 
+                    const power_toughness_text = `<div class="card-text">${card.power} Power / ${card.toughness} Toughness</div>`
+                    const loyalty_text = `<div class="card-text">${card.loyalty} Loyalty</div>`
+
                     // Display the card
                     document.getElementById('cardOutput').innerHTML = `
                         <div class="card">
                             <div class="card-header">
                                 <div class="card-name">${card.name}</div>
+                                <div class="card-name">${card.mana_cost}</div>
                             </div>
                             <div class="card-type">${card.type}</div>
                             <div class="card-text">${card.text}</div>
                             <div class="card-flavor">${card.flavor_text}</div>
+                            ${card.power && card.toughness ? power_toughness_text : ''}
+                            ${card.loyalty ? loyalty_text : ''}
                         </div>
                     `;
                 } else {
