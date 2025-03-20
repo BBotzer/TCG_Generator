@@ -6,10 +6,13 @@ from tokenizers import Tokenizer
 import torch
 from tcg_generator.theme_options import THEME_OPTIONS, TYPE_LINE_OPTIONS
 
+from transformers import GPT2LMHeadModel, GPT2Tokenizer, AutoTokenizer
+
 app = Flask(__name__)
 
-MODEL_DIRECTORY = ""
-TOKENIZER_FILE = ""
+# I hard coded this... we'll have to make it relative to the project
+MODEL_DIRECTORY = "C:\\Users\\btb51\\Documents\\GitHub\\TCG_Generator\\tcg_generator\\models\\hf_gpt2_style_theme_model_endoftext_testing"
+TOKENIZER_FILE = "C:\\Users\\btb51\\Documents\\GitHub\\TCG_Generator\\tcg_generator\\models\\themed_data"
 
 def generate_text(
         prompt, max_length=300, num_return_sequences=1, temperature=1.0):
@@ -30,12 +33,12 @@ def generate_text(
     # Move model to GPU if available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    model = torch.load(MODEL_DIRECTORY)
+    model = GPT2LMHeadModel.from_pretrained(MODEL_DIRECTORY)
     model = model.to(device)
     model.eval()
 
     # Need to load tokenizer from saved folder.
-    tokenizer = Tokenizer.from_file(TOKENIZER_FILE)
+    tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_FILE)
     # Encode the input prompt
     encoded_prompt = tokenizer(prompt, return_tensors='pt').to(device)
 
@@ -49,7 +52,8 @@ def generate_text(
             num_return_sequences=num_return_sequences,
             pad_token_id=tokenizer.pad_token_id,
             eos_token_id=tokenizer.eos_token_id,
-            do_sample=True,
+            bos_token_id=tokenizer.bos_token_id,
+            # do_sample=True,
         )
 
     # Decode and return the generated sequences
@@ -94,13 +98,19 @@ def generate():
             or (TOKENIZER_FILE != "" and os.path.exists(TOKENIZER_FILE))
         ):
             # Need to load the tokenizer from a saved folder as well.
+            print("Attempting to generate text...")
+            print(f"Theme text: {themes_text}")
             model_output = generate_text(themes_text)
+            print(f"Model output: {model_output}")
         else:
             model_output = f"This is a {selected_card_type.lower()} card combining the themes: {themes_text}."
 
+        #TODO: Output parsing
         # Do all the parsing within here.
         # Mock card generation
         # This is where we'll have to parse out our generated card text and slap it in
+
+
         card = {
             "name": themes_text,
             "type": selected_card_type,
