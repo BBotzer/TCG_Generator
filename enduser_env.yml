@@ -1,4 +1,4 @@
-name: tcg_generator
+name: tcg_generator_enduser
 channels:
   - conda-forge
   - pytorch
@@ -12,29 +12,8 @@ dependencies:
   - jupyterlab
   - pip
 
-  # Formating and make things look nice
-  - black
-  - flake8
-  - isort
-  - typer
-  - loguru
-  - tqdm
-  - python-dotenv
-
-# Data Science packages
-  - matplotlib
-  - notebook
   - numpy
   - pandas
-  - scikit-learn
-  - seaborn
-
-# Specific packages for tcg_generator
-
-  # NLP work
-  - nltk
-  - spacy
-  - gensim
 
   - pip:
 
@@ -46,8 +25,8 @@ dependencies:
 
 
     # Pytorch and related packages - Pip install your own pytorch version
-    # - pytorch==2.5.1 # pytorch 2.6.0 is pip install only
-    # - pytorch-cuda=11.8 # Specific to your GPU setup
+    - pytorch==2.5.1 # pytorch 2.6.0 is pip install only
+    - pytorch-cuda=11.8 # Specific to your GPU setup
     # - torchtext
 
 
