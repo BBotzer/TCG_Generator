@@ -15,15 +15,6 @@ app = Flask(__name__)
 MODEL_DIRECTORY = "../models/hf_gpt2_style_theme_model_v2_10_epochs"
 TOKENIZER_FILE = "../models/hf_gpt2_style_theme_model_v2_10_epochs"
 
-THEMES_FORMAT = r"<THEMES> ([a-zA-Z0-9,/\s{}-]+)"
-CARD_NAME_FORMAT = r"<CARD_NAME> ([a-zA-Z0-9<>]+)"
-MANA_COST_FORMAT = r"<MANA_COST> ([\{\}0-9WUBRG\s]+)"
-TYPE_LINE_FORMAT = r"<TYPE_LINE> ([a-zA-Z0-9\s,—]+)"
-ORACLE_TEXT_FORMAT = r"<ORACLE_TEXT> ([a-zA-Z0-9,\s|<name>]+)"
-POWER_FORMAT = r"<POWER> ([0-9X+]+)"
-TOUGHNESS_FORMAT = r"<TOUGHNESS> ([0-9X+]+)"
-LOYALTY_FORMAT = r"<LOYALTY> ([0-9X+]+)"
-
 
 def generate_text(
         prompt, max_length=300, num_return_sequences=1, temperature=1.0):
@@ -122,39 +113,24 @@ def generate():
         # Mock card generation
         # This is where we'll have to parse out our generated card text and slap it in
         model_output = model_output.split("[end]")[0]
-        print(model_output)
-        print("Matching theme")
-        theme_match = re.match(THEMES_FORMAT, model_output)
-        themes = theme_match.group(0) if theme_match is not None else None
-        print(f"Matched theme: {themes != None}")
-        print("Matching card name")
-        card_name_match = re.match(CARD_NAME_FORMAT, model_output)
-        card_name = card_name_match.group(0) if card_name_match is not None else None
-        print(f"Matched card name: {card_name != None}")
-        print("Matching mana cost")
-        mana_cost_match = re.match(MANA_COST_FORMAT, model_output)
-        mana_cost = mana_cost_match.group(0) if mana_cost_match is not None else None
-        print(f"Matched mana cost: {mana_cost != None}")
-        print("Matching type line")
-        type_line_match = re.match(TYPE_LINE_FORMAT, model_output)
-        type_line = type_line_match.group(0) if type_line_match is not None else None
-        print(f"Matched type line: {type_line != None}")
-        print("Matching oracle text")
-        oracle_text_match = re.match(ORACLE_TEXT_FORMAT, model_output)
-        oracle_text = oracle_text_match.group(0) if oracle_text_match is not None else None
-        print(f"Matched oracle_text: {oracle_text != None}")
-        print("Matching power")
-        power_match = re.match(POWER_FORMAT, model_output)
-        power = power_match.group(0) if power_match is not None else None
-        print(f"Matched power: {power != None}")
-        print("Matching toughness")
-        toughness_match = re.match(TOUGHNESS_FORMAT, model_output)
-        toughness = toughness_match.group(0) if toughness_match is not None else None
-        print(f"Matched toughness: {toughness != None}")
-        print("Matching loyalty")
-        loyalty_match = re.match(LOYALTY_FORMAT, model_output)
-        loyalty = loyalty_match.group(0) if loyalty_match is not None else None
-        print(f"Matched loyalty: {loyalty != None}")
+        themes = model_output.split("<THEMES>")[-1].split("<CARD_NAME>")[0]
+        card_name = model_output.split("<CARD_NAME>")[-1].split("<MANA_COST>")[0]
+        mana_cost = model_output.split("<MANA_COST>")[-1].split("<TYPE_LINE>")[0]
+        type_line = model_output.split("<TYPE_LINE>")[-1].split("<ORACLE_TEXT>")[0]
+        # If the card is neither a creature or planeswalker, it should end with the oracle text.
+        oracle_text = model_output.split("<ORACLE_TEXT>")[-1]
+        power = None
+        toughness = None
+        loyalty = None
+        if "<POWER>" in oracle_text:
+            oracle_text = oracle_text.split("<POWER>")[0]
+            power = model_output.split("<POWER>")[-1].split("<TOUGHNESS>")[0]
+            # Toughness is expected to be the last part of a creature
+            toughness = model_output.split("<TOUGHNESS>")[-1]
+        elif "<LOYALTY>" in oracle_text:
+            oracle_text = oracle_text.split("<LOYALTY>")[0]
+            # Loyalty is expected to be the last part of a planeswalker
+            loyalty = model_output.split("<TOUGHNESS>")[-1]
 
         card = {
             "themes": themes,
@@ -163,7 +139,7 @@ def generate():
             "type": type_line,
             "text": oracle_text,
             "power": power,
-            "toughess": toughness,
+            "toughness": toughness,
             "loyalty": loyalty,
             "flavor_text": f"The blended essence of {', '.join(selected_themes)} flows through this {selected_card_type.lower()}."
         }
