@@ -15,6 +15,10 @@ app = Flask(__name__)
 MODEL_DIRECTORY = "../models/hf_gpt2_style_theme_model_v2_10_epochs"
 TOKENIZER_FILE = "../models/hf_gpt2_style_theme_model_v2_10_epochs"
 
+def prepare_for_html(string):
+    if string is None:
+        return None
+    return string.replace("<", "&lt;").replace(">", "&gt;")
 
 def generate_text(
         prompt, max_length=300, num_return_sequences=1, temperature=1.0):
@@ -113,7 +117,7 @@ def generate():
         # Mock card generation
         # This is where we'll have to parse out our generated card text and slap it in
         model_output = model_output.split("[end]")[0]
-        themes = model_output.split("<THEMES>")[-1].split("<CARD_NAME>")[0]
+        themes = model_output.split("<THEMES>")[-1].split("<CARD_NAME>")[0].replace("<", "&lt;")
         card_name = model_output.split("<CARD_NAME>")[-1].split("<MANA_COST>")[0]
         mana_cost = model_output.split("<MANA_COST>")[-1].split("<TYPE_LINE>")[0]
         type_line = model_output.split("<TYPE_LINE>")[-1].split("<ORACLE_TEXT>")[0]
@@ -133,14 +137,14 @@ def generate():
             loyalty = model_output.split("<TOUGHNESS>")[-1]
 
         card = {
-            "themes": themes,
-            "name": card_name,
-            "mana_cost": mana_cost,
-            "type": type_line,
-            "text": oracle_text,
-            "power": power,
-            "toughness": toughness,
-            "loyalty": loyalty,
+            "themes": prepare_for_html(themes),
+            "name": prepare_for_html(card_name),
+            "mana_cost": prepare_for_html(mana_cost),
+            "type": prepare_for_html(type_line),
+            "text": prepare_for_html(oracle_text),
+            "power": prepare_for_html(power),
+            "toughness": prepare_for_html(toughness),
+            "loyalty": prepare_for_html(loyalty),
             "flavor_text": f"The blended essence of {', '.join(selected_themes)} flows through this {selected_card_type.lower()}."
         }
 
