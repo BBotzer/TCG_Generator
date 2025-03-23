@@ -5,20 +5,29 @@ import re
 from flask import Flask, render_template, request, jsonify
 from tokenizers import Tokenizer
 import torch
+import sys
+sys.path.append('../')
 from tcg_generator.theme_options import THEME_OPTIONS, TYPE_LINE_OPTIONS
 
 from transformers import GPT2LMHeadModel, GPT2Tokenizer, AutoTokenizer
+
+
 
 app = Flask(__name__)
 
 # I hard coded this... we'll have to make it relative to the project
 MODEL_DIRECTORY = "../models/hf_gpt2_style_theme_model_v2_10_epochs"
 TOKENIZER_FILE = "../models/hf_gpt2_style_theme_model_v2_10_epochs"
+GENERATE_IMG = False
+
+if(GENERATE_IMG):
+    from diffusers import StableDiffusion3Pipeline
 
 def prepare_for_html(string):
     if string is None:
         return None
     return string.replace("<", "&lt;").replace(">", "&gt;")
+
 
 def generate_text(
         prompt, max_length=300, num_return_sequences=1, temperature=1.0):
@@ -70,6 +79,15 @@ def generate_text(
 
     return generated_sequences[0]
 
+def generate_image(prompt):
+    pipe = StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3.5-medium", torch_dtype=torch.bfloat16)
+    # If not using cuda, remove this line
+    pipe = pipe.to("cuda")
+    
+    image = pipe(prompt, num_inference_steps=40, guidance_scale=4.5, ).images[0]
+    image.save("static/img.png")
+    
+
 @app.route('/')
 def index():
     """Render the main page with the form"""
@@ -95,7 +113,7 @@ def generate():
 
         selected_card_type = form_data["card_type"]
         selected_themes.append(selected_card_type)
-        themes_text = f"<THEMES> {" , ".join(selected_themes)} <CARD_NAME>"
+        themes_text = f"<THEMES> {' , '.join(selected_themes)} <CARD_NAME>"
         print(themes_text)
 
         # Run our model here
@@ -108,6 +126,10 @@ def generate():
             print(f"Theme text: {themes_text}")
             model_output = generate_text(themes_text)
             print(f"Model output: {model_output}")
+            if (GENERATE_IMG):
+                print("Generating image...")
+                generate_image(model_output)
+                print("Image generated!")
         else:
             print("Model not found!")
             model_output = f"This is a {selected_card_type.lower()} card combining the themes: {themes_text}."
