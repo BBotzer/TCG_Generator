@@ -58,17 +58,33 @@ def generate_text(
     encoded_prompt = tokenizer(prompt, return_tensors='pt').to(device)
 
     # Generate text
+    # with torch.no_grad():
+    #     output_sequences = model.generate(
+    #         input_ids=encoded_prompt['input_ids'],
+    #         attention_mask=encoded_prompt['attention_mask'],
+    #         max_length=max_length,
+    #         temperature=temperature,
+    #         num_return_sequences=num_return_sequences,
+    #         pad_token_id=tokenizer.pad_token_id,
+    #         eos_token_id=tokenizer.eos_token_id,
+    #         bos_token_id=tokenizer.bos_token_id,
+    #         # do_sample=True,
+    #     )
+
+# Testing NEW generation method
     with torch.no_grad():
         output_sequences = model.generate(
             input_ids=encoded_prompt['input_ids'],
             attention_mask=encoded_prompt['attention_mask'],
             max_length=max_length,
-            temperature=temperature,
-            num_return_sequences=num_return_sequences,
+            do_sample=True,
+            temperature=0.6,
+            top_k=5,
+            top_p=0.75,
+            no_repeat_ngram_size=2,
             pad_token_id=tokenizer.pad_token_id,
             eos_token_id=tokenizer.eos_token_id,
             bos_token_id=tokenizer.bos_token_id,
-            # do_sample=True,
         )
 
     # Decode and return the generated sequences
@@ -83,10 +99,10 @@ def generate_image(prompt):
     pipe = StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3.5-medium", torch_dtype=torch.bfloat16)
     # If not using cuda, remove this line
     pipe = pipe.to("cuda")
-    
+
     image = pipe(prompt, num_inference_steps=40, guidance_scale=4.5, ).images[0]
     image.save("static/img.png")
-    
+
 
 @app.route('/')
 def index():
@@ -142,17 +158,23 @@ def generate():
         themes = model_output.split("<THEMES>")[-1].split("<CARD_NAME>")[0].replace("<", "&lt;")
         card_name = model_output.split("<CARD_NAME>")[-1].split("<MANA_COST>")[0]
         mana_cost = model_output.split("<MANA_COST>")[-1].split("<TYPE_LINE>")[0]
-        type_line = model_output.split("<TYPE_LINE>")[-1].split("<ORACLE_TEXT>")[0]
+        # type_line = model_output.split("<TYPE_LINE>")[-1].split("<ORACLE_TEXT>")[0]
+        # With the new generation method, the type line is generating more than one word.
+        type_line = model_output.split("<TYPE_LINE>")[-1].split()[0]
         # If the card is neither a creature or planeswalker, it should end with the oracle text.
-        oracle_text = model_output.split("<ORACLE_TEXT>")[-1]
+        if "<ORACLE_TEXT>" in model_output:
+            oracle_text = model_output.split("<ORACLE_TEXT>")[-1].split("end]")[0]
+        else:
+            oracle_text = "No Generated Oracle Text."
         power = None
         toughness = None
         loyalty = None
-        if "<POWER>" in oracle_text:
-            oracle_text = oracle_text.split("<POWER>")[0]
-            power = model_output.split("<POWER>")[-1].split("<TOUGHNESS>")[0]
-            # Toughness is expected to be the last part of a creature
-            toughness = model_output.split("<TOUGHNESS>")[-1]
+        if "<POWER>" in model_output:
+            # power_text = model_output.split("<POWER>")[0]
+            power = model_output.split("<POWER>")[-1].split()[0] # Just get the first number after the <POWER> tag
+        if "<TOUGHNESS>" in model_output:
+            toughness = model_output.split("<TOUGHNESS>")[-1].split()[0] # Just get the first number after the <TOUGHNESS> tag
+            print(f"\n\n{toughness}\n\n")
         elif "<LOYALTY>" in oracle_text:
             oracle_text = oracle_text.split("<LOYALTY>")[0]
             # Loyalty is expected to be the last part of a planeswalker
