@@ -154,7 +154,7 @@ def generate():
         # Do all the parsing within here.
         # Mock card generation
         # This is where we'll have to parse out our generated card text and slap it in
-        model_output = model_output.split("[end]")[0]
+        model_output = model_output.split("end]")[0]
         themes = model_output.split("<THEMES>")[-1].split("<CARD_NAME>")[0].replace("<", "&lt;")
         card_name = model_output.split("<CARD_NAME>")[-1].split("<MANA_COST>")[0]
         mana_cost = model_output.split("<MANA_COST>")[-1].split("<TYPE_LINE>")[0]
