@@ -52,6 +52,6 @@ dependencies:
 
 
     - Flask
-    # - python-dotenv
+    - python-dotenv
     # - mkdocs
     - -e . # developer install of this package

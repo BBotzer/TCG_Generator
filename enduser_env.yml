@@ -6,12 +6,10 @@ channels:
 dependencies:
 
 # Classic pydata_packages
-
   - python
   - ipython
   - jupyterlab
   - pip
-
   - numpy
   - pandas
 
@@ -23,14 +21,18 @@ dependencies:
     - tokenizers
   # - accelerate # If you've got a good GPU this'll work... I don't think a 1070 will support it
 
+    # Needed to launch the Flask application
+    - Flask
+    - python-dotenv
+    - loguru
 
     # Pytorch and related packages - Pip install your own pytorch version
-    - pytorch==2.5.1 # pytorch 2.6.0 is pip install only
-    - pytorch-cuda=11.8 # Specific to your GPU setup
-    # - torchtext
+    # Note, the cu118 is for CUDA 11.8, you CUDA version may vary and can be found with `nvidia-smi` in the terminal
+    # cu124 is for CUDA 12.4
+    # cu128 is for CUDA 12.8
+    # removing the --index-url will install the CPU version of pytorch
+    - torch --index-url https://download.pytorch.org/whl/cu118
+    - torchvision --index-url https://download.pytorch.org/whl/cu118
+    - torchaudio --index-url https://download.pytorch.org/whl/cu118
 
-
-    - Flask
-    # - python-dotenv
-    # - mkdocs
-    - -e . # developer install of this package
+    # - -e . # developer install of this package
