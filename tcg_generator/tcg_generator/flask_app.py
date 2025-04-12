@@ -16,8 +16,8 @@ from transformers import GPT2LMHeadModel, GPT2Tokenizer, AutoTokenizer
 app = Flask(__name__)
 
 # I hard coded this... we'll have to make it relative to the project
-MODEL_DIRECTORY = "../models/hf_gpt2_style_theme_model_v2_10_epochs"
-TOKENIZER_FILE = "../models/hf_gpt2_style_theme_model_v2_10_epochs"
+MODEL_DIRECTORY = "../models/hf_gpt2_style_theme_model_quick_v4_15_epochs"
+TOKENIZER_FILE = "../models/hf_gpt2_style_theme_model_quick_v4_15_epochs"
 GENERATE_IMG = False
 
 if(GENERATE_IMG):
